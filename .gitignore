@@ -1,0 +1,13 @@
+# Ignorar arquivos de sistema e python
+__pycache__/
+*.pyc
+
+# Ignorar ambiente virtual (pesado e inútil na nuvem)
+.venv/
+venv/
+env/
+
+# IGNORAR SENHAS (CRUCIAL)
+.env
+.streamlit/secrets.toml
+config_secreta.json
