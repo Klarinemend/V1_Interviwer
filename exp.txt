@@ -4,4 +4,4 @@ O sistema precisa cadastrar os tutores com nome, telefone e endereço, e vincula
 Atendemos principalmente cães e gatos. 
 O mais importante é o controle de vacinas: o sistema deve me responder quais vacinas estão vencidas ou próximas de vencer para que possamos avisar os donos. 
 Além disso, precisamos agendar consultas informando qual veterinário vai atender e gerar um histórico clínico de cada animal. 
-Por fim, o sistema precisa calcular o valor total dos atendimentos do dia para o fechamento do caixa."
+Por fim, o sistema precisa calcular o valor total dos atendimentos do dia para o fechamento do caixa.
