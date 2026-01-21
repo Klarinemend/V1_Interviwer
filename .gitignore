@@ -11,3 +11,9 @@ env/
 .env
 .streamlit/secrets.toml
 config_secreta.json
+
+# Ignorar arquivos de dependências e bibliotecas
+os
+genai
+json
+st

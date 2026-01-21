@@ -13,10 +13,10 @@ class ConversationRepository:
         self.base_path = base_path
         os.makedirs(self.base_path, exist_ok=True)
 
+    # =========================
+    # SALVAR
+    # =========================
     def save(self, messages: List[Dict]) -> str:
-        """
-        Salva uma conversa e retorna o nome do arquivo.
-        """
         if not messages:
             raise ValueError("Não há mensagens para salvar.")
 
@@ -27,20 +27,24 @@ class ConversationRepository:
             json.dump(messages, f, ensure_ascii=False, indent=2)
 
         return filename
+    
 
+    # =========================
+    # CARREGAR
+    # =========================
     def load(self, filename: str) -> List[Dict]:
-        """
-        Carrega uma conversa pelo nome do arquivo.
-        """
         path = os.path.join(self.base_path, filename)
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Arquivo não encontrado: {filename}")
 
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def list_all(self) -> List[str]:
-        """
-        Lista todas as conversas salvas.
-        """
+    # =========================
+    # LISTAR
+    # =========================
+    def list_conversations(self) -> List[str]:
         files = [
             f for f in os.listdir(self.base_path)
             if f.endswith(".json")
@@ -48,9 +52,11 @@ class ConversationRepository:
         files.sort(reverse=True)
         return files
 
+    # =========================
+    # EXCLUIR
+    # =========================
     def delete(self, filename: str) -> None:
-        """
-        Remove uma conversa salva.
-        """
         path = os.path.join(self.base_path, filename)
-        os.remove(path)
+
+        if os.path.exists(path):
+            os.remove(path)

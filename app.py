@@ -3,21 +3,36 @@ import time
 
 from infra.gemini_client import get_random_client
 from core.chat_engine import ChatEngine
-from core.history import ConversationRepository
 from core.extraction.concept_extractor import ConceptExtractor
 from core.clustering.subdomain_detector import SubdomainDetector
-from UI import render_sidebar, render_chat
+from core.history import ConversationRepository, CatalogRepository
+from core.catalog import ConversationCatalogRepository
 
+
+from UI.sidebar import render_sidebar
+from UI.chat_view import render_chat
+from UI.catalog_view import render_catalog_view
 
 
 # ==============================================================================
 # CONFIGURAÇÃO DA PÁGINA
 # ==============================================================================
 st.set_page_config(
-    page_title="Engenheiro de Requisitos",
+    page_title="SABiOx - Engenheiro de Requisitos",
     layout="wide"
 )
 
+# ==============================================================================
+# SESSION STATE
+# ==============================================================================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "catalog" not in st.session_state:
+    st.session_state.catalog = None
+
+if "current_view" not in st.session_state:
+    st.session_state.current_view = "chat"
 
 # ==============================================================================
 # CLIENT FACTORY
@@ -29,7 +44,7 @@ def client_factory():
 # ==============================================================================
 # CONFIGURAÇÕES DO MODELO
 # ==============================================================================
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 
 SYSTEM_INSTRUCTION = """
 Você é um Engenheiro de Conhecimento Sênior e consultor em Ontologias.
@@ -38,7 +53,7 @@ Seu objetivo é entrevistar o usuário para modelar um domínio.
 
 
 # ==============================================================================
-# INICIALIZAÇÃO DOS COMPONENTES
+# COMPONENTES
 # ==============================================================================
 chat_engine = ChatEngine(
     model=MODEL_NAME,
@@ -47,51 +62,83 @@ chat_engine = ChatEngine(
 )
 
 conversation_repo = ConversationRepository("historico_conversas")
+catalog_repo = CatalogRepository("catalogs")
+conversation_catalog_repo = ConversationCatalogRepository()
 
-concept_extractor = ConceptExtractor(
-    gemini_client=client_factory()
-)
 
-subdomain_detector = SubdomainDetector(
-    gemini_client=client_factory()
-)
+concept_extractor = ConceptExtractor()
+subdomain_detector = SubdomainDetector()
 
 
 # ==============================================================================
-# SESSION STATE
-# ==============================================================================
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-
-# ==============================================================================
-# USER INPUT
+# CALLBACKS
 # ==============================================================================
 def on_new_chat():
     st.session_state.messages = []
+    st.session_state.catalog = None
     st.rerun()
 
 
 def on_analyze_domain():
-    concepts = concept_extractor.extract_from_messages(
-        st.session_state.messages,
-        use_ai_enrichment=True
-    )
+    messages = st.session_state.get("messages", [])
 
-    subdomains = subdomain_detector.detect(
-        concepts,
-        use_ai_naming=True
-    )
+    if len(messages) < 4:
+        st.warning("Conversa insuficiente para análise.")
+        return
 
-    st.success("Análise concluída!")
-    st.json(subdomains)
+    with st.spinner("Analisando domínio..."):
+        concepts = concept_extractor.extract_from_messages(
+            messages,
+            min_frequency=2,
+            max_concepts=20,
+            use_ai_enrichment=False
+        )
+
+        subdomains_result = subdomain_detector.detect(
+            concepts,
+            use_ai_naming=False
+        )
+
+        st.session_state.catalog = {
+            "concepts": concepts,
+            "subdomains": subdomains_result.get("subdomains", []),
+            "metadata": {
+                "generated_at": time.time(),
+                "source": "conversation",
+            }
+        }
+
+    st.success("✅ Catálogo gerado com sucesso!")
 
 
+# ==============================================================================
+# UI
+# ==============================================================================
 render_sidebar(
     conversation_repo=conversation_repo,
+    catalog_repo=conversation_catalog_repo,
     on_new_chat=on_new_chat,
     on_analyze_domain=on_analyze_domain
 )
 
-render_chat(chat_engine)
+
+# ==============================================================================
+# ÁREA PRINCIPAL
+# ==============================================================================
+
+if st.session_state.current_view == "catalog":
+    st.title("📊 Catálogo do Domínio")
+    render_catalog_view()
+
+    if st.button("⬅️ Voltar para o Chat"):
+        st.session_state.current_view = "chat"
+        st.rerun()
+
+elif st.session_state.current_view == "history":
+    st.title("📚 Histórico")
+    st.info("Use a sidebar para gerenciar conversas.")
+
+else:
+    render_chat(chat_engine)
+
 
