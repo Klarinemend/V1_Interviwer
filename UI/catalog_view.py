@@ -13,57 +13,41 @@ def render_catalog_view():
         st.info("Nenhum catálogo gerado ainda.")
         return
 
-    concepts = catalog.get("concepts", [])
-    subdomains = catalog.get("subdomains", [])
+    st.subheader("📊 Visão Geral")
+    st.metric("Conceitos", len(catalog["concepts"]))
+    st.metric("Subdomínios", len(catalog["subdomains"]))
 
-    tab_overview, tab_concepts, tab_export = st.tabs(
-        ["📊 Visão Geral", "📚 Conceitos", "⬇️ Exportar"]
-    )
+    st.divider()
 
-    # =========================
-    # VISÃO GERAL
-    # =========================
-    with tab_overview:
-        st.metric("Conceitos", len(concepts))
-        st.metric("Subdomínios", len(subdomains))
+    st.subheader("📚 Conceitos")
+    df = pd.DataFrame(catalog["concepts"])
+    st.dataframe(df, use_container_width=True)
 
-    # =========================
-    # CONCEITOS
-    # =========================
-    with tab_concepts:
-        if not concepts:
-            st.warning("Nenhum conceito encontrado.")
-            return
+    st.divider()
+    st.subheader("⬇️ Exportar")
 
-        df = pd.DataFrame(concepts)
-        st.dataframe(df, use_container_width=True)
+    col1, col2, col3 = st.columns(3)
 
-    # =========================
-    # EXPORTAÇÃO
-    # =========================
-    with tab_export:
-        col1, col2, col3 = st.columns(3)
+    with col1:
+        st.download_button(
+            "📄 JSON",
+            export_catalog_to_json(catalog),
+            "catalogo.json",
+            "application/json"
+        )
 
-        with col1:
-            st.download_button(
-                "📄 JSON",
-                data=export_catalog_to_json(catalog),
-                file_name="catalogo.json",
-                mime="application/json"
-            )
+    with col2:
+        st.download_button(
+            "📊 CSV",
+            export_concepts_to_csv(catalog["concepts"]),
+            "conceitos.csv",
+            "text/csv"
+        )
 
-        with col2:
-            st.download_button(
-                "📊 CSV",
-                data=export_concepts_to_csv(concepts),
-                file_name="conceitos.csv",
-                mime="text/csv"
-            )
-
-        with col3:
-            st.download_button(
-                "📝 Markdown",
-                data=export_catalog_to_markdown(catalog),
-                file_name="catalogo.md",
-                mime="text/markdown"
-            )
+    with col3:
+        st.download_button(
+            "📝 Markdown",
+            export_catalog_to_markdown(catalog),
+            "catalogo.md",
+            "text/markdown"
+        )

@@ -15,27 +15,35 @@ def render_sidebar(
         # ==========================================================
         # NAVEGAÇÃO PRINCIPAL
         # ==========================================================
+        LABELS = {
+            "chat": "💬 Chat",
+            "catalog": "📊 Catálogo",
+            "history": "📚 Histórico",
+        }
+
         view = st.radio(
             "📂 Navegação",
-            ["💬 Chat", "📊 Catálogo", "📚 Histórico"],
+            options=list(LABELS.keys()),
+            format_func=lambda k: LABELS[k],
             index=_get_view_index(),
         )
 
         st.session_state.current_view = view
+
 
         st.divider()
 
         # ==========================================================
         # AÇÕES CONTEXTUAIS
         # ==========================================================
-        if view == "💬 Chat":
+        if view == "chat":
             render_chat_actions(on_new_chat, on_analyze_domain)
 
-        elif view == "📊 Catálogo":
+        elif view == "catalog":
             render_catalog_info(on_analyze_domain)
 
-        elif view == "📚 Histórico":
-            render_history_actions(conversation_repo, catalog_repo)
+        elif view == "history":
+            render_history_actions(conversation_repo, catalog_repo, on_analyze_domain)
 
 
 # ==============================================================
@@ -74,9 +82,10 @@ def render_chat_actions(on_new_chat, on_analyze_domain):
 def render_catalog_info(on_analyze_domain):
     st.subheader("📊 Catálogo")
 
-    messages = st.session_state.get("messages", [])
+    catalog = st.session_state.get("catalog")
 
-    if not messages or len(messages) < 4:
+    if not catalog:
+
         st.info(
             """
 📋 **Como funciona**
@@ -116,7 +125,8 @@ def render_catalog_info(on_analyze_domain):
 # HISTÓRICO ACTIONS
 # ==============================================================
 
-def render_history_actions(conversation_repo, catalog_repo):
+def render_history_actions(conversation_repo, catalog_repo, on_analyze_domain):
+
     st.subheader("📚 Histórico")
 
     if st.button("💾 Salvar Conversa Atual", use_container_width=True):
@@ -133,6 +143,20 @@ def render_history_actions(conversation_repo, catalog_repo):
 
         st.success("✅ Conversa salva")
         st.rerun()
+
+    st.divider()
+    
+    if st.button("🔍 Extrair Conceitos dessa Conversa", use_container_width=True):
+        messages = st.session_state.get("messages")
+
+        if not messages or len(messages) < 4:
+            st.warning("Conversa muito curta para análise")
+        else:
+            with st.spinner("🧠 Reanalisando conversa..."):
+                on_analyze_domain()
+            st.success("Catálogo atualizado a partir do histórico")
+            st.session_state.current_view = "catalog"
+            st.rerun()
 
     st.divider()
 
@@ -171,6 +195,6 @@ def render_history_actions(conversation_repo, catalog_repo):
 # ==============================================================
 
 def _get_view_index():
-    view = st.session_state.get("current_view", "💬 Chat")
-    options = ["💬 Chat", "📊 Catálogo", "📚 Histórico"]
+    view = st.session_state.get("current_view", "chat")
+    options = ["chat", "catalog", "history"]
     return options.index(view) if view in options else 0

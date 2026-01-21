@@ -25,14 +25,16 @@ st.set_page_config(
 # ==============================================================================
 # SESSION STATE
 # ==============================================================================
+if "current_view" not in st.session_state:
+    st.session_state.current_view = "chat"
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "catalog" not in st.session_state:
     st.session_state.catalog = None
 
-if "current_view" not in st.session_state:
-    st.session_state.current_view = "chat"
+
 
 # ==============================================================================
 # CLIENT FACTORY
@@ -86,7 +88,7 @@ def on_analyze_domain():
         st.warning("Conversa insuficiente para análise.")
         return
 
-    with st.spinner("Analisando domínio..."):
+    with st.spinner(" Analisando domínio..."):
         concepts = concept_extractor.extract_from_messages(
             messages,
             min_frequency=2,
@@ -129,10 +131,7 @@ render_sidebar(
 if st.session_state.current_view == "catalog":
     st.title("📊 Catálogo do Domínio")
     render_catalog_view()
-
-    if st.button("⬅️ Voltar para o Chat"):
-        st.session_state.current_view = "chat"
-        st.rerun()
+   
 
 elif st.session_state.current_view == "history":
     st.title("📚 Histórico")
